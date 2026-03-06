@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 환율 그래프 생성 스크립트
-USD/KRW, USD/VND 환율 그래프 생성
+USD/KRW, USD/VND 환율 그래프 생성 (리스트 + 스파크라인)
 """
 
 import json
@@ -23,78 +23,97 @@ def load_data():
     
     return data.get("krw_rates", []), data.get("vnd_rates", [])
 
-def generate_mermaid_chart(krw_rates, vnd_rates, days=7):
-    """Mermaid XY Chart 생성"""
-    if not krw_rates:
-        return None
+def generate_sparkline(values, bars=8):
+    """스파크라인 생성 (유니코드 블록)"""
+    if not values or len(values) < 2:
+        return "▁"
     
-    # 최근 데이터 필터링
-    recent_krw = krw_rates[-(days*4):] if len(krw_rates) > days*4 else krw_rates
-    recent_vnd = vnd_rates[-(days*4):] if vnd_rates and len(vnd_rates) > days*4 else vnd_rates
+    # 최근 N개만 사용
+    recent = values[-bars:]
     
-    # 데이터 준비
-    x_labels = [f"{r['date'][5:]} {r['time']}" for r in recent_krw]
-    krw_values = [r['rate'] for r in recent_krw]
-    vnd_values = [r['rate'] for r in recent_vnd] if recent_vnd else []
+    # 정규화
+    min_val = min(recent)
+    max_val = max(recent)
+    range_val = max_val - min_val
     
-    # Mermaid xychart-beta 형식 (GitHub 미지원으로 ASCII 아트 사용)
-    output = []
-    output.append("📊 USD/KRW & USD/VND Exchange Rate")
-    output.append("━" * 50)
+    # 스파크라인 문자: ▁ ▂ ▃ ▄ ▅ ▆ ▇ █
+    spark_chars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
     
-    # KRW 그래프
-    if krw_values:
-        max_val = max(krw_values)
-        min_val = min(krw_values)
-        range_val = max_val - min_val
-        
-        output.append("\n🇰🇷 USD/KRW (원화):")
-        for i, (label, val) in enumerate(zip(x_labels, krw_values)):
-            bar_len = int((val - min_val) / range_val * 20) if range_val > 0 else 10
-            bar = "█" * bar_len
-            output.append(f"{label}: {bar} {val:,.0f}")
+    sparkline = ""
+    for val in recent:
+        if range_val > 0:
+            idx = int((val - min_val) / range_val * (len(spark_chars) - 1))
+        else:
+            idx = 3  # 중간값
+        sparkline += spark_chars[idx]
     
-    # VND 그래프
-    if vnd_values:
-        max_val = max(vnd_values)
-        min_val = min(vnd_values)
-        range_val = max_val - min_val
-        
-        output.append("\n🇻🇳 USD/VND (베트남 동화):")
-        for i, (label, val) in enumerate(zip(x_labels, vnd_values)):
-            bar_len = int((val - min_val) / range_val * 20) if range_val > 0 else 10
-            bar = "█" * bar_len
-            output.append(f"{label}: {bar} {val:,.0f}")
-    
-    return "\n".join(output)
+    return sparkline
 
-def generate_ascii_graph(krw_rates, vnd_rates, days=7):
-    """ASCII 아트 그래프 생성 (GitHub 호환)"""
-    if not krw_rates:
-        return "No data available"
+def get_trend(values):
+    """추세 분석 (상승/하락/보합)"""
+    if not values or len(values) < 2:
+        return "→"
     
-    # 최근 데이터 필터링
-    recent_krw = krw_rates[-(days*4):] if len(krw_rates) > days*4 else krw_rates
-    recent_vnd = vnd_rates[-(days*4):] if vnd_rates and len(vnd_rates) > days*4 else vnd_rates
+    recent = values[-4:]  # 최근 4개
+    if len(recent) < 2:
+        return "→"
+    
+    current = recent[-1]
+    previous = recent[-2]
+    
+    diff = current - previous
+    
+    if diff > 0:
+        return f"↑ +{diff:,.1f}"
+    elif diff < 0:
+        return f"↓ {diff:,.1f}"
+    else:
+        return "→"
+
+def generate_report(krw_rates, vnd_rates):
+    """환율 리포트 생성 (리스트 형태)"""
+    if not krw_rates:
+        return "❌ 데이터 없음"
     
     output = []
-    output.append("```")
-    output.append("📊 Exchange Rates (Last {} Days)".format(days))
-    output.append("━" * 50)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
     
-    # KRW
-    if recent_krw:
-        output.append("\n🇰🇷 USD/KRW:")
-        for r in recent_krw[-10:]:  # 최근 10개만 표시
-            output.append(f"  {r['date']} {r['time']} → {r['rate']:,.0f}원")
+    output.append(f"💱 **환율 리포트** ({now})")
+    output.append("━" * 40)
     
-    # VND
-    if recent_vnd:
-        output.append("\n🇻🇳 USD/VND:")
-        for r in recent_vnd[-10:]:  # 최근 10개만 표시
-            output.append(f"  {r['date']} {r['time']} → {r['rate']:,.0f}동")
+    # 현재 환율
+    output.append("\n**현재 환율**")
     
-    output.append("```")
+    if krw_rates:
+        current_krw = krw_rates[-1]['rate']
+        sparkline_krw = generate_sparkline([r['rate'] for r in krw_rates])
+        trend_krw = get_trend([r['rate'] for r in krw_rates])
+        output.append(f"- 🇰🇷 **USD/KRW**: {current_krw:,.1f}원 {sparkline_krw} {trend_krw}")
+    
+    if vnd_rates:
+        current_vnd = vnd_rates[-1]['rate']
+        sparkline_vnd = generate_sparkline([r['rate'] for r in vnd_rates])
+        trend_vnd = get_trend([r['rate'] for r in vnd_rates])
+        output.append(f"- 🇻🇳 **USD/VND**: {current_vnd:,.0f}동 {sparkline_vnd} {trend_vnd}")
+    
+    # 7일 추세
+    output.append("\n**7일 추세**")
+    
+    if krw_rates and len(krw_rates) >= 7:
+        week_krw = [r['rate'] for r in krw_rates[-7:]]
+        min_krw = min(week_krw)
+        max_krw = max(week_krw)
+        avg_krw = sum(week_krw) / len(week_krw)
+        output.append(f"- KRW: {min_krw:,.0f} ~ {max_krw:,.0f} (평균 {avg_krw:,.0f})")
+    
+    if vnd_rates and len(vnd_rates) >= 7:
+        week_vnd = [r['rate'] for r in vnd_rates[-7:]]
+        min_vnd = min(week_vnd)
+        max_vnd = max(week_vnd)
+        avg_vnd = sum(week_vnd) / len(week_vnd)
+        output.append(f"- VND: {min_vnd:,.0f} ~ {max_vnd:,.0f} (평균 {avg_vnd:,.0f})")
+    
+    output.append("━" * 40)
     
     return "\n".join(output)
 
@@ -103,29 +122,25 @@ def main():
     krw_rates, vnd_rates = load_data()
     
     if not krw_rates and not vnd_rates:
-        print("No data available")
+        print("❌ 데이터 없음")
         return
     
-    print(f"📊 Total rates collected:")
-    print(f"   KRW: {len(krw_rates)} entries")
-    print(f"   VND: {len(vnd_rates) if vnd_rates else 0} entries")
-    
-    # ASCII 그래프 생성
-    ascii_graph = generate_ascii_graph(krw_rates, vnd_rates, days=7)
-    print("\n" + ascii_graph)
+    # 리포트 생성
+    report = generate_report(krw_rates, vnd_rates)
+    print("\n" + report)
     
     # 출력 디렉토리 생성
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
-    # 그래프 파일로 저장
-    graph_file = OUTPUT_DIR / f"exchange_rate_{datetime.now().strftime('%Y%m%d')}.txt"
-    with open(graph_file, 'w', encoding='utf-8') as f:
-        f.write(ascii_graph)
+    # 파일로 저장
+    report_file = OUTPUT_DIR / f"exchange_rate_{datetime.now().strftime('%Y%m%d_%H%M')}.txt"
+    with open(report_file, 'w', encoding='utf-8') as f:
+        f.write(report)
     
-    print(f"\n✅ Graph saved: {graph_file}")
+    print(f"\n✅ 저장됨: {report_file}")
     
     return {
-        "graph_file": str(graph_file),
+        "report_file": str(report_file),
         "krw_count": len(krw_rates),
         "vnd_count": len(vnd_rates) if vnd_rates else 0
     }
