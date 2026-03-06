@@ -36,10 +36,21 @@ flowchart TD
 
 ## 그래프 출력
 
-- **PNG 이미지:** `output/exchange_rate_YYYYMMDD.png`
-- **데이터:** `references/exchange-rates.json`
+- **Mermaid XY Chart** (지원 여부 테스트 중)
+- **ASCII 아트** (확실히 작동)
 
-**예시 출력:**
+### Mermaid XY Chart (테스트)
+
+```mermaid
+xychart
+    title "USD/KRW Exchange Rate"
+    x-axis ["03/01", "03/02", "03/03", "03/04", "03/05"]
+    y-axis "KRW" 1450 --> 1520
+    line [1485, 1488, 1490, 1495, 1487]
+```
+
+### ASCII 아트 (확실)
+
 ```
 USD/KRW Exchange Rate (Last 7 Days)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
