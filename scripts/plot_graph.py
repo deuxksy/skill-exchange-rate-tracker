@@ -85,16 +85,20 @@ def generate_report(krw_rates, vnd_rates):
     output.append("\n**현재 환율**")
     
     if krw_rates:
-        current_krw = krw_rates[-1]['rate']
+        latest = krw_rates[-1]
+        current_krw = latest['rate']
+        date_str = f"{latest['date']} {latest['time']}"
         sparkline_krw = generate_sparkline([r['rate'] for r in krw_rates])
         trend_krw = get_trend([r['rate'] for r in krw_rates])
-        output.append(f"- 🇰🇷 **USD/KRW**: {current_krw:,.1f}원 {sparkline_krw} {trend_krw}")
+        output.append(f"- 🇰🇷 **USD/KRW** ({date_str}): {current_krw:,.1f}원 {sparkline_krw} {trend_krw}")
     
     if vnd_rates:
-        current_vnd = vnd_rates[-1]['rate']
+        latest = vnd_rates[-1]
+        current_vnd = latest['rate']
+        date_str = f"{latest['date']} {latest['time']}"
         sparkline_vnd = generate_sparkline([r['rate'] for r in vnd_rates])
         trend_vnd = get_trend([r['rate'] for r in vnd_rates])
-        output.append(f"- 🇻🇳 **USD/VND**: {current_vnd:,.0f}동 {sparkline_vnd} {trend_vnd}")
+        output.append(f"- 🇻🇳 **USD/VND** ({date_str}): {current_vnd:,.0f}동 {sparkline_vnd} {trend_vnd}")
     
     # 7일 추세
     output.append("\n**7일 추세**")
