@@ -71,7 +71,7 @@ def get_trend(values):
         return "→"
 
 def generate_xychart(krw_rates, vnd_rates, days=7):
-    """Mermaid xychart 생성 (KRW + VND)"""
+    """Mermaid xychart 생성 (KRW + VND, 색상 구분)"""
     if not krw_rates:
         return None
     
@@ -94,9 +94,10 @@ def generate_xychart(krw_rates, vnd_rates, days=7):
     min_krw = int(min(krw_values) - 10)
     max_krw = int(max(krw_values) + 10)
     
-    # Mermaid xychart 생성
+    # Mermaid xychart 생성 (색상 테마 적용)
     output = []
     output.append("```mermaid")
+    output.append("%%{init: {'theme': 'base', 'themeVariables': { 'xyChart': {'plotColorPalette': '#3b82f6, #ef4444'}}}}%%")
     output.append("xychart")
     output.append(f'    title "Exchange Rates (USD)"')
     output.append(f'    x-axis [{", ".join(x_labels)}]')
