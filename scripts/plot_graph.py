@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 환율 그래프 생성 스크립트
-USD/KRW, USD/VND 환율 그래프 생성 (리스트 + 스파크라인)
+USD/KRW, USD/VND 환율 xychart 생성
 """
 
 import json
@@ -70,8 +70,38 @@ def get_trend(values):
     else:
         return "→"
 
+def generate_xychart(krw_rates, vnd_rates, days=7):
+    """Mermaid xychart 생성"""
+    if not krw_rates:
+        return None
+    
+    # 최근 데이터 필터링
+    recent_krw = krw_rates[-(days*4):] if len(krw_rates) > days*4 else krw_rates
+    recent_vnd = vnd_rates[-(days*4):] if vnd_rates and len(vnd_rates) > days*4 else vnd_rates
+    
+    # 데이터 준비 (최근 8개만)
+    krw_recent = recent_krw[-8:]
+    x_labels = [f'"{r["date"][5:]} {r["time"]}"' for r in krw_recent]
+    krw_values = [r['rate'] for r in krw_recent]
+    
+    # 최소/최대값 계산
+    min_krw = int(min(krw_values) - 10)
+    max_krw = int(max(krw_values) + 10)
+    
+    # Mermaid xychart 생성
+    output = []
+    output.append("```mermaid")
+    output.append("xychart")
+    output.append(f'    title "USD/KRW Exchange Rate"')
+    output.append(f'    x-axis [{", ".join(x_labels)}]')
+    output.append(f'    y-axis "KRW" {min_krw} --> {max_krw}')
+    output.append(f'    line [{", ".join([str(v) for v in krw_values])}]')
+    output.append("```")
+    
+    return "\n".join(output)
+
 def generate_report(krw_rates, vnd_rates):
-    """환율 리포트 생성 (리스트 형태)"""
+    """환율 리포트 생성"""
     if not krw_rates:
         return "❌ 데이터 없음"
     
@@ -100,8 +130,14 @@ def generate_report(krw_rates, vnd_rates):
         trend_vnd = get_trend([r['rate'] for r in vnd_rates])
         output.append(f"- 🇻🇳 **USD/VND** ({date_str}): {current_vnd:,.0f}동 {sparkline_vnd} {trend_vnd}")
     
-    # 7일 추세
-    output.append("\n**7일 추세**")
+    # xychart
+    xychart = generate_xychart(krw_rates, vnd_rates)
+    if xychart:
+        output.append("\n**7일 추세 그래프**")
+        output.append(xychart)
+    
+    # 7일 통계
+    output.append("\n**7일 통계**")
     
     if krw_rates and len(krw_rates) >= 7:
         week_krw = [r['rate'] for r in krw_rates[-7:]]
