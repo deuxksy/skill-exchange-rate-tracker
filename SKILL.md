@@ -1,6 +1,6 @@
 ---
 name: exchange-rate-tracker
-description: 달러-원화(KRW) 및 달러-베트남동화(VND) 환율을 추적하고 그래프로 시각화하는 스킬. Use when: (1) 환율 조회 요청, (2) 환율 그래프 생성, (3) 환율 변동 알림, (4) cron job으로 정기 환율 수집. 항상 한국어로 응답.
+description: 달러-원화(KRW) 및 달러-베트남동화(VND) 환율을 추적하고 그래프로 시각화하는 스킬. Use when (1) 환율 조회 요청, (2) 환율 그래프 생성, (3) 환율 변동 알림, (4) cron job으로 정기 환율 수집. 항상 한국어로 응답.
 ---
 
 # Exchange Rate Tracker 💱📊
