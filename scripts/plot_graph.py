@@ -71,7 +71,7 @@ def get_trend(values):
         return "→"
 
 def generate_xychart(krw_rates, vnd_rates, days=7):
-    """Mermaid xychart 생성"""
+    """Mermaid xychart 생성 (KRW + VND)"""
     if not krw_rates:
         return None
     
@@ -84,7 +84,13 @@ def generate_xychart(krw_rates, vnd_rates, days=7):
     x_labels = [f'"{r["date"][5:]} {r["time"]}"' for r in krw_recent]
     krw_values = [r['rate'] for r in krw_recent]
     
-    # 최소/최대값 계산
+    # VND 데이터
+    vnd_values = None
+    if recent_vnd and len(recent_vnd) >= 8:
+        vnd_recent = recent_vnd[-8:]
+        vnd_values = [r['rate'] for r in vnd_recent]
+    
+    # 최소/최대값 계산 (KRW)
     min_krw = int(min(krw_values) - 10)
     max_krw = int(max(krw_values) + 10)
     
@@ -92,10 +98,18 @@ def generate_xychart(krw_rates, vnd_rates, days=7):
     output = []
     output.append("```mermaid")
     output.append("xychart")
-    output.append(f'    title "USD/KRW Exchange Rate"')
+    output.append(f'    title "Exchange Rates (USD)"')
     output.append(f'    x-axis [{", ".join(x_labels)}]')
     output.append(f'    y-axis "KRW" {min_krw} --> {max_krw}')
     output.append(f'    line [{", ".join([str(v) for v in krw_values])}]')
+    
+    # VND가 있으면 두 번째 라인 추가
+    if vnd_values:
+        min_vnd = int(min(vnd_values) - 100)
+        max_vnd = int(max(vnd_values) + 100)
+        output.append(f'    y-axis "VND" {min_vnd} --> {max_vnd}')
+        output.append(f'    line [{", ".join([str(v) for v in vnd_values])}]')
+    
     output.append("```")
     
     return "\n".join(output)
