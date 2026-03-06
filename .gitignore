@@ -1,0 +1,13 @@
+# Data files
+references/exchange-rates.json
+
+# Output
+output/
+
+# OpenClaw
+*.skill
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
